@@ -3,7 +3,7 @@ MAINTAINER David Personette <dperson@gmail.com>
 
 # Install samba
 RUN apk --no-cache --no-progress upgrade && \
-    apk --no-cache --no-progress add bash samba shadow tini tzdata && \
+    apk --no-cache --no-progress add bash samba shadow tini tzdata e2fsprogs && \
     addgroup -S smb && \
     adduser -S -D -H -h /tmp -s /sbin/nologin -G smb -g 'Samba User' smbuser &&\
     file="/etc/samba/smb.conf" && \
@@ -56,13 +56,12 @@ RUN apk --no-cache --no-progress upgrade && \
     rm -rf /tmp/*
 
 COPY samba.sh /usr/bin/
+COPY start_cifs.sh /opt/
 
 EXPOSE 137/udp 138/udp 139 445
 
 HEALTHCHECK --interval=60s --timeout=15s \
             CMD smbclient -L \\localhost -U % -m SMB3
 
-VOLUME ["/etc", "/var/cache/samba", "/var/lib/samba", "/var/log/samba",\
-            "/run/samba"]
+ENTRYPOINT ["/sbin/tini", "--", "/opt/start_samba.sh"]
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/samba.sh"]
